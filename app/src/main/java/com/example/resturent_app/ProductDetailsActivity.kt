@@ -34,8 +34,7 @@ class ProductDetailsActivity : AppCompatActivity() {
             Glide.with(this).load(product.imageUrl).into(img)
 
             btnAdd.setOnClickListener {
-                com.example.resturent_app.utils.CartManager.addToCart(product)
-                Toast.makeText(this, "${product.name} added to Cart", Toast.LENGTH_SHORT).show()
+                com.example.resturent_app.utils.CartManager.addToCart(this, product)
             }
         }
     }

@@ -9,11 +9,11 @@
     android:background="#FFFFFF">
 
     <ImageView
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:src="@android:drawable/checkbox_on_background"
-        android:layout_marginBottom="24dp"
-        app:tint="#4CAF50" />
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@drawable/ic_check_circle"
+        app:tint="@color/theme_orange"
+        android:layout_marginBottom="24dp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -26,10 +26,11 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Thank you for your order. Your food is being prepared."
+        android:text="Thank you for your order.\nYour food is being prepared."
         android:gravity="center"
         android:layout_marginTop="12dp"
-        android:textSize="16sp"/>
+        android:textSize="16sp"
+        android:textColor="#757575"/>
 
     <Button
         android:id="@+id/btnHome"
@@ -37,6 +38,7 @@
         android:layout_height="55dp"
         android:text="Back to Home"
         android:textColor="@color/white"
+        android:textStyle="bold"
         android:backgroundTint="@color/theme_orange"
         android:layout_marginTop="40dp"/>
 

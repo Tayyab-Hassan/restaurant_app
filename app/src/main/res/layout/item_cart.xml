@@ -57,9 +57,8 @@
                 android:layout_width="30dp"
                 android:layout_height="30dp"
                 android:padding="8dp"
-                android:src="@drawable/ic_plus_rounded"
-                android:rotation="45"
-                app:tint="@color/black"/> <TextView
+                android:src="@drawable/ic_minus_rounded"
+                app:tint="@color/design_default_color_error"/> <TextView
             android:id="@+id/tvQty"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

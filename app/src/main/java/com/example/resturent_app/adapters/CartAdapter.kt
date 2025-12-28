@@ -43,20 +43,23 @@ class CartAdapter(
         Glide.with(holder.itemView.context).load(item.product.imageUrl).into(holder.img)
 
         // Logic for Buttons
+        // PLUS BUTTON
         holder.btnPlus.setOnClickListener {
-            CartManager.addToCart(item.product)
+            com.example.resturent_app.utils.CartManager.addToCart(holder.itemView.context, item.product)
             notifyItemChanged(position)
-            onQuantityChange() // Recalculate Total
-        }
-
-        holder.btnMinus.setOnClickListener {
-            CartManager.decreaseQuantity(item.product)
-            notifyDataSetChanged() // Because item might be removed
             onQuantityChange()
         }
 
+        // MINUS BUTTON
+        holder.btnMinus.setOnClickListener {
+            com.example.resturent_app.utils.CartManager.decreaseQuantity(holder.itemView.context, item.product)
+            notifyDataSetChanged() // List refresh
+            onQuantityChange()
+        }
+
+        // DELETE BUTTON
         holder.btnDelete.setOnClickListener {
-            CartManager.removeItem(item.product)
+            com.example.resturent_app.utils.CartManager.removeItem(holder.itemView.context, item.product)
             notifyDataSetChanged()
             onQuantityChange()
         }

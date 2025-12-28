@@ -42,8 +42,7 @@ class ProductAdapter(
         holder.itemView.setOnClickListener { onProductClick(item) }
         holder.btnCart.setOnClickListener {
             // Handle Add to Cart
-            com.example.resturent_app.utils.CartManager.addToCart(item)
-            android.widget.Toast.makeText(holder.itemView.context, "Added to Cart", android.widget.Toast.LENGTH_SHORT).show()
+            com.example.resturent_app.utils.CartManager.addToCart(holder.itemView.context, item)
         }
     }
 

@@ -14,6 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Resturent_app"
         tools:targetApi="31">
+
         <activity
             android:name=".RestaurantDetailsActivity"
             android:exported="false" />
@@ -37,6 +38,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".CheckoutActivity"/>
+        <activity android:name=".MyOrdersActivity"/>
+        <activity android:name=".OrderSuccessActivity"/>
     </application>
 
 </manifest>

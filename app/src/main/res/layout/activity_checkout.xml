@@ -18,35 +18,46 @@
         app:layout_constraintStart_toStartOf="parent"/>
 
     <TextView
-        android:id="@+id/lblAddress"
+        android:id="@+id/lblPhone"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Delivery Address"
+        android:text="Phone Number"
         android:layout_marginTop="24dp"
         android:textStyle="bold"
         app:layout_constraintTop_toBottomOf="@id/tvTitle"
         app:layout_constraintStart_toStartOf="parent"/>
 
     <EditText
+        android:id="@+id/etPhone"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="e.g 123456789"
+        android:inputType="phone"
+        android:background="@android:drawable/edit_text"
+        android:padding="12dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/lblPhone"/>
+
+    <TextView
+        android:id="@+id/lblAddress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Delivery Address"
+        android:layout_marginTop="16dp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/etPhone"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+    <EditText
         android:id="@+id/etAddress"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:hint="Enter your full address..."
+        android:hint="Enter full address..."
         android:gravity="top"
         android:background="@android:drawable/edit_text"
         android:padding="12dp"
         android:layout_marginTop="8dp"
         app:layout_constraintTop_toBottomOf="@id/lblAddress"/>
-
-    <TextView
-        android:id="@+id/lblSummary"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Order Summary"
-        android:layout_marginTop="24dp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/etAddress"
-        app:layout_constraintStart_toStartOf="parent"/>
 
     <TextView
         android:id="@+id/tvTotalAmount"
@@ -56,17 +67,33 @@
         android:textSize="20sp"
         android:textColor="@color/theme_orange"
         android:textStyle="bold"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/lblSummary"
+        android:layout_marginTop="24dp"
+        app:layout_constraintTop_toBottomOf="@id/etAddress"
         app:layout_constraintStart_toStartOf="parent"/>
 
-    <Button
-        android:id="@+id/btnPlaceOrder"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="55dp"
-        android:text="Place Order"
-        android:backgroundTint="@color/theme_orange"
+        android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button
+            android:id="@+id/btnPlaceOrder"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="Place Order"
+            android:backgroundTint="@color/theme_orange"
+            android:textColor="@color/white"
+            android:textStyle="bold"/>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center"
+            android:indeterminateTint="@color/white"
+            android:elevation="10dp"
+            android:visibility="gone"/>
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

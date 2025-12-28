@@ -1,42 +1,65 @@
 package com.example.resturent_app.utils
 
-import android.util.Log
+import android.content.Context
+import android.widget.Toast
 import com.example.resturent_app.models.CartItem
 import com.example.resturent_app.models.Product
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 object CartManager {
-    // Local list to show on UI immediately
-    private val cartItems = mutableListOf<CartItem>()
+    // Ye list temporary RAM mein data rakhti hai
+    private var cartItems = mutableListOf<CartItem>()
 
-    // Firebase Instances
-    private val auth = FirebaseAuth.getInstance()
-    private val db = FirebaseFirestore.getInstance()
+    // --- SAVE & LOAD (LOCAL STORAGE) ---
 
-    // Get current User ID
-    private fun getCurrentUserId(): String? {
-        return auth.currentUser?.uid
+    // Data ko mobile mein save karna
+    private fun saveCartToPrefs(context: Context) {
+        val prefs = context.getSharedPreferences("my_cart_prefs", Context.MODE_PRIVATE)
+        val editor = prefs.edit()
+
+        val gson = Gson()
+        // List ko String (JSON) mein badal kar save karna
+        val json = gson.toJson(cartItems)
+
+        editor.putString("CART_DATA", json)
+        editor.apply()
     }
 
-    // --- MAIN FUNCTIONS ---
+    // App start hone par data wapis lana
+    fun loadCartFromPrefs(context: Context) {
+        val prefs = context.getSharedPreferences("my_cart_prefs", Context.MODE_PRIVATE)
+        val json = prefs.getString("CART_DATA", null)
+
+        if (json != null) {
+            try {
+                val gson = Gson()
+                val type = object : TypeToken<MutableList<CartItem>>() {}.type
+                cartItems = gson.fromJson(json, type)
+            } catch (e: Exception) {
+                // Agar data corrupted hai to crash mat karo, bas list clear kardo
+                e.printStackTrace()
+                cartItems = mutableListOf()
+            }
+        }
+    }
+
+    // --- ACTIONS ---
 
     fun getCartItems(): List<CartItem> = cartItems
 
-    fun addToCart(product: Product) {
+    fun addToCart(context: Context, product: Product) {
         val existingItem = cartItems.find { it.product.id == product.id }
-
         if (existingItem != null) {
             existingItem.quantity++
         } else {
             cartItems.add(CartItem(product, 1))
         }
-
-        // Sync with Firestore
-        saveCartToFirestore()
+        saveCartToPrefs(context) // Save immediately
+        Toast.makeText(context, "Added to Cart", Toast.LENGTH_SHORT).show()
     }
 
-    fun decreaseQuantity(product: Product) {
+    fun decreaseQuantity(context: Context, product: Product) {
         val existingItem = cartItems.find { it.product.id == product.id }
         if (existingItem != null) {
             if (existingItem.quantity > 1) {
@@ -44,20 +67,18 @@ object CartManager {
             } else {
                 cartItems.remove(existingItem)
             }
-            // Sync with Firestore
-            saveCartToFirestore()
+            saveCartToPrefs(context) // Save immediately
         }
     }
 
-    fun removeItem(product: Product) {
+    fun removeItem(context: Context, product: Product) {
         cartItems.removeAll { it.product.id == product.id }
-        // Sync with Firestore
-        saveCartToFirestore()
+        saveCartToPrefs(context) // Save immediately
     }
 
-    fun clearCart() {
+    fun clearCart(context: Context) {
         cartItems.clear()
-        saveCartToFirestore()
+        saveCartToPrefs(context)
     }
 
     fun getTotalPrice(): Double {
@@ -67,81 +88,5 @@ object CartManager {
             total += (price * item.quantity)
         }
         return total
-    }
-
-    // --- FIRESTORE LOGIC ---
-
-    // 1. Save the whole cart to Firestore (Overwrites existing cart)
-    private fun saveCartToFirestore() {
-        val userId = getCurrentUserId() ?: return // If not logged in, stop
-
-        // We create a map where Key = Product ID, Value = CartItem
-        // This is easier to save than a list
-        val cartMap = hashMapOf<String, Any>()
-
-        for (item in cartItems) {
-            cartMap[item.product.id.toString()] = item
-        }
-
-        // Path: users/{uid}/cart_data/current_cart
-        // We use .set() to overwrite the old cart with the new one
-        db.collection("users").document(userId)
-            .collection("cart_data").document("current_cart")
-            .set(mapOf("items" to cartItems))
-            .addOnSuccessListener {
-                Log.d("CartManager", "Cart synced with Firestore")
-            }
-            .addOnFailureListener { e ->
-                Log.e("CartManager", "Error syncing cart", e)
-            }
-    }
-
-    // 2. Fetch Cart when App Starts
-    fun fetchCartFromFirestore(onComplete: () -> Unit) {
-        val userId = getCurrentUserId()
-        if (userId == null) {
-            onComplete()
-            return
-        }
-
-        db.collection("users").document(userId)
-            .collection("cart_data").document("current_cart")
-            .get()
-            .addOnSuccessListener { document ->
-                if (document.exists()) {
-                    // Get the list of hash maps from Firestore
-                    val rawList = document.get("items") as? List<HashMap<String, Any>>
-
-                    if (rawList != null) {
-                        cartItems.clear() // Clear local before adding remote data
-
-                        for (map in rawList) {
-                            // Manually reconstruct the CartItem and Product objects
-                            // Because Firestore returns generic Maps
-                            try {
-                                val quantity = (map["quantity"] as Long).toInt()
-                                val prodMap = map["product"] as HashMap<String, Any>
-
-                                val product = Product(
-                                    id = (prodMap["id"] as Long).toInt(),
-                                    restaurantId = (prodMap["restaurantId"] as Long).toInt(),
-                                    name = prodMap["name"] as String,
-                                    description = prodMap["description"] as String,
-                                    price = prodMap["price"] as String,
-                                    imageUrl = prodMap["imageUrl"] as String
-                                )
-
-                                cartItems.add(CartItem(product, quantity))
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
-                    }
-                }
-                onComplete() // Tell UI we are done
-            }
-            .addOnFailureListener {
-                onComplete()
-            }
     }
 }

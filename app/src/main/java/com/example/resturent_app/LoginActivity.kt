@@ -8,11 +8,15 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.auth.FirebaseAuth
+import com.example.resturent_app.api.RetrofitClient
+import com.example.resturent_app.models.AuthResponse
+import com.example.resturent_app.models.LoginRequest
+import com.example.resturent_app.utils.UserSession
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class LoginActivity : AppCompatActivity() {
-
-    private lateinit var auth: FirebaseAuth
 
     // UI Variables
     private lateinit var btnLogin: Button
@@ -25,48 +29,73 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
-        auth = FirebaseAuth.getInstance()
-
-        // Auto Login Check
-        if (auth.currentUser != null) {
+        // 1. Session Check (Auto Login)
+        // Firebase ki jagah ab hum apna session check karenge
+        val session = UserSession(this)
+        if (session.isLoggedIn()) {
             startActivity(Intent(this, MainActivity::class.java))
             finish()
+            return
         }
 
         // Initialize Views
         etEmail = findViewById(R.id.etEmail)
         etPassword = findViewById(R.id.etPassword)
         btnLogin = findViewById(R.id.btnLogin)
-        progressBar = findViewById(R.id.progressBar) // Init Progress Bar
+        progressBar = findViewById(R.id.progressBar)
         btnGoToSignup = findViewById(R.id.btnGoToSignup)
 
         btnLogin.setOnClickListener {
             val email = etEmail.text.toString().trim()
             val pass = etPassword.text.toString().trim()
 
-            // 1. Validation
+            // Validation
             if (email.isEmpty() || pass.isEmpty()) {
                 Toast.makeText(this, "Please enter email and password", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // 2. Start Loading
+            // Start Loading
             showLoading(true)
 
-            // 3. Firebase Auth
-            auth.signInWithEmailAndPassword(email, pass)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        Toast.makeText(this, "Welcome Back!", Toast.LENGTH_SHORT).show()
-                        startActivity(Intent(this, MainActivity::class.java))
-                        finish()
-                        // Note: No need to stop loading here as activity closes
+            // --- API CALL START ---
+            val request = LoginRequest(email, pass)
+
+            RetrofitClient.instance.login(request).enqueue(object : Callback<AuthResponse> {
+                override fun onResponse(call: Call<AuthResponse>, response: Response<AuthResponse>) {
+                    showLoading(false) // Stop Loading
+
+                    val body = response.body()
+
+                    // Server check: Response successful hai aur body.success true hai
+                    if (response.isSuccessful && body != null && body.success) {
+                        val userData = body.data
+
+                        if (userData != null) {
+                            // User Data ko mobile mein save karo
+                            session.saveUser(userData.id, userData.name, userData.email)
+
+                            Toast.makeText(this@LoginActivity, "Login Successful!", Toast.LENGTH_SHORT).show()
+
+                            // Go to Home
+                            startActivity(Intent(this@LoginActivity, MainActivity::class.java))
+                            finish()
+                        } else {
+                            Toast.makeText(this@LoginActivity, "Error: No user data found", Toast.LENGTH_SHORT).show()
+                        }
                     } else {
-                        // Failure: Stop loading and show error
-                        showLoading(false)
-                        Toast.makeText(this, "Login Failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                        // Agar password galat hai ya user nahi mila
+                        val errorMsg = body?.message ?: "Login Failed"
+                        Toast.makeText(this@LoginActivity, errorMsg, Toast.LENGTH_SHORT).show()
                     }
                 }
+
+                override fun onFailure(call: Call<AuthResponse>, t: Throwable) {
+                    showLoading(false) // Stop Loading
+                    Toast.makeText(this@LoginActivity, "Network Error: ${t.message}", Toast.LENGTH_SHORT).show()
+                }
+            })
+            // --- API CALL END ---
         }
 
         btnGoToSignup.setOnClickListener {

@@ -2,101 +2,139 @@ package com.example.resturent_app
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.resturent_app.api.RetrofitClient
-import com.example.resturent_app.models.OrderItem
-import com.example.resturent_app.models.OrderRequest
+import com.example.resturent_app.models.CartItemRequest
+import com.example.resturent_app.models.CheckoutRequest
+import com.example.resturent_app.models.CheckoutResponse
 import com.example.resturent_app.utils.CartManager
-import com.google.firebase.auth.FirebaseAuth
+import com.example.resturent_app.utils.UserSession
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 class CheckoutActivity : AppCompatActivity() {
 
+    // UI Variables declare karein
+    private lateinit var etPhone: EditText
+    private lateinit var etAddress: EditText
+    private lateinit var btnPlaceOrder: Button
+    private lateinit var progressBar: ProgressBar
+    private lateinit var tvTotal: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_checkout)
 
-        val etAddress = findViewById<EditText>(R.id.etAddress)
-        val tvTotal = findViewById<TextView>(R.id.tvTotalAmount)
-        val btnPlaceOrder = findViewById<Button>(R.id.btnPlaceOrder)
+        // --- FIX IS HERE (Explicit Type <Type> add kiya hai) ---
+        etPhone = findViewById<EditText>(R.id.etPhone)
+        etAddress = findViewById<EditText>(R.id.etAddress)
+        tvTotal = findViewById<TextView>(R.id.tvTotalAmount)
+        btnPlaceOrder = findViewById<Button>(R.id.btnPlaceOrder)
+        progressBar = findViewById<ProgressBar>(R.id.progressBar)
 
         // Show Total
         val totalAmount = CartManager.getTotalPrice()
         tvTotal.text = "Total to Pay: $${String.format("%.2f", totalAmount)}"
 
         btnPlaceOrder.setOnClickListener {
+            // Ab .text error nahi dega kyunki humne upar <EditText> bata diya hai
+            val phone = etPhone.text.toString().trim()
             val address = etAddress.text.toString().trim()
 
             // Validation
-            if (address.isEmpty()) {
-                Toast.makeText(this, "Please enter address", Toast.LENGTH_SHORT).show()
+            if (phone.isEmpty() || address.isEmpty()) {
+                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // Call function to place order
-            placeOrderToBackend(address, totalAmount)
+            // Call function
+            placeOrder(phone, address)
         }
     }
 
-    private fun placeOrderToBackend(address: String, total: Double) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
+    private fun placeOrder(phone: String, address: String) {
+        val session = UserSession(this)
+        val userIdStr = session.getUserId()
 
-        if (userId == null) {
-            Toast.makeText(this, "User not logged in!", Toast.LENGTH_SHORT).show()
+        // Convert String ID to Int (Safety check ke sath)
+        val userId = userIdStr.toIntOrNull()
+
+        if (userId == null || userId == -1) {
+            Toast.makeText(this, "User not logged in correctly", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // 1. Get Cart Items from Local Manager
+        // 1. Start Loading
+        showLoading(true)
+
+        // 2. Prepare Data for API
         val cartItems = CartManager.getCartItems()
 
-        // 2. Convert CartItem (Mobile Model) -> OrderItem (API Model)
-        // Kotlin ka '.map' function Flutter ke '.map().toList()' jaisa hai
-        val apiOrderItems = cartItems.map {
-            OrderItem(
-                productId = it.product.id, // Backend will use this to find the restaurant
-                quantity = it.quantity,
-                price = (it.product.price.toDoubleOrNull() ?: 0.0)
+        // Convert Local Cart items to API Request format
+        val apiCartItems = cartItems.map {
+            CartItemRequest(
+                foodItemId = it.product.id,
+                quantity = it.quantity
             )
         }
 
-        // 3. Create the Main Request Object
-        val request = OrderRequest(
+        val request = CheckoutRequest(
             userId = userId,
-            totalAmount = total,
-            address = address,
-            items = apiOrderItems
+            phone = phone,
+            deliveryAddress = address,
+            cartItems = apiCartItems
         )
 
-        // 4. Send to API
-        // .enqueue() is like .then() in Flutter Future
-        RetrofitClient.instance.placeOrder(request).enqueue(object : Callback<Void> {
-            override fun onResponse(call: Call<Void>, response: Response<Void>) {
-                if (response.isSuccessful) {
-                    // Success!
-                    Toast.makeText(this@CheckoutActivity, "Order Placed Successfully!", Toast.LENGTH_LONG).show()
+        // 3. API Call
+        RetrofitClient.instance.placeOrder(request).enqueue(object : Callback<CheckoutResponse> {
+            override fun onResponse(call: Call<CheckoutResponse>, response: Response<CheckoutResponse>) {
+                showLoading(false) // Stop Loading
 
-                    CartManager.clearCart() // Clear local cart
+                val body = response.body()
+
+                // Check Success
+                if (response.isSuccessful && body != null && body.success) {
+
+                    // Clear Cart locally
+                    CartManager.clearCart(this@CheckoutActivity)
+
+                    Toast.makeText(this@CheckoutActivity, "Order Placed Successfully!", Toast.LENGTH_LONG).show()
 
                     // Navigate to Success Screen
                     val intent = Intent(this@CheckoutActivity, OrderSuccessActivity::class.java)
-                    // Remove back stack so user can't go back to checkout
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
                     finish()
+
                 } else {
                     Toast.makeText(this@CheckoutActivity, "Failed: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
             }
 
-            override fun onFailure(call: Call<Void>, t: Throwable) {
+            override fun onFailure(call: Call<CheckoutResponse>, t: Throwable) {
+                showLoading(false) // Stop Loading
                 Toast.makeText(this@CheckoutActivity, "Network Error: ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
+    }
+
+    // Helper Function for Loading Animation
+    private fun showLoading(isLoading: Boolean) {
+        if (isLoading) {
+            btnPlaceOrder.text = "" // Button text hide karo
+            btnPlaceOrder.isEnabled = false // Button disable karo
+            progressBar.visibility = View.VISIBLE // Spinner dikhao
+        } else {
+            btnPlaceOrder.text = "Place Order" // Text wapis lao
+            btnPlaceOrder.isEnabled = true // Button enable karo
+            progressBar.visibility = View.GONE // Spinner chupao
+        }
     }
 }

@@ -39,8 +39,7 @@ class CartFragment : Fragment(R.layout.fragment_cart) {
             if (CartManager.getCartItems().isEmpty()) {
                 Toast.makeText(context, "Cart is Empty", Toast.LENGTH_SHORT).show()
             } else {
-                // Navigate to Checkout Screen
-                val intent = android.content.Intent(context, com.example.resturent_app.CheckoutActivity::class.java)
+                val intent = android.content.Intent(requireContext(), com.example.resturent_app.CheckoutActivity::class.java)
                 startActivity(intent)
             }
         }
@@ -54,11 +53,6 @@ class CartFragment : Fragment(R.layout.fragment_cart) {
         adapter.updateData(CartManager.getCartItems())
         updateTotal()
 
-        // Optional: Trigger a fetch just in case it wasn't loaded
-        CartManager.fetchCartFromFirestore {
-            adapter.updateData(CartManager.getCartItems())
-            updateTotal()
-        }
     }
 
     private fun updateTotal() {
