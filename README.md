@@ -91,11 +91,11 @@ Contains the UI Screens.
 **CheckoutActivity.kt:** Handles Address/Phone input and API Order Placement.
 **MyOrdersActivity.kt:** Fetches and displays user order history.
 
-# Feature           Method  Endpoint
+# Feature ---- Method ----Endpoint
 
-Login           	POST	/v1/api/login
-Register        	POST	/v1/api/register-user
-Get Restaurants	    GET 	/v1/api/all-restaurants
-Get Foods       	GET 	/v1/api/all-fooditems
-Place Order     	POST	/v1/api/order/checkout
-Order History   	GET 	/v1/api/order/user/{id}
+* **Login** ---- POST ----/v1/api/login
+* **Register** ---- POST ----/v1/api/register-user
+* **Get Restaurants** ---- GET ----/v1/api/all-restaurants
+* **Get Foods**	---- GET ----/v1/api/all-fooditems
+* **Place Order** ---- POST ----/v1/api/order/checkout
+* **Order** ---- GET ---- /v1/api/order/user/{id}
