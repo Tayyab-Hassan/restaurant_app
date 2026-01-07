@@ -92,6 +92,7 @@ Contains the UI Screens.
 **MyOrdersActivity.kt:** Fetches and displays user order history.
 
 # Feature ---- Method ----Endpoint
+These are the End Apis
 
 * **Login** ---- POST ----/v1/api/login
 * **Register** ---- POST ----/v1/api/register-user
